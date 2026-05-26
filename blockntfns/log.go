@@ -14,13 +14,9 @@ func init() {
 
 // DisableLog disables all library log output.  Logging output is disabled
 // by default until either UseLogger or SetLogWriter are called.
-func DisableLog() {
-	UseLogger(btclog.Disabled)
-}
+func DisableLog() { _ = "STUB: not implemented"; return }
 
 // UseLogger uses a specified Logger to output package logging info.
 // This should be used in preference to SetLogWriter if the caller is also
 // using btclog.
-func UseLogger(logger btclog.Logger) {
-	log = logger
-}
+func UseLogger(logger btclog.Logger) { _ = "STUB: not implemented"; return }

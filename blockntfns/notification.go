@@ -1,8 +1,6 @@
 package blockntfns
 
 import (
-	"fmt"
-
 	"github.com/btcsuite/btcd/wire"
 )
 
@@ -34,30 +32,34 @@ var _ BlockNtfn = (*Connected)(nil)
 
 // NewBlockConnected creates a new Connected notification for the given block.
 func NewBlockConnected(header wire.BlockHeader, height uint32) *Connected {
-	return &Connected{header: header, height: height}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // Header returns the header of the block extending the chain.
 func (n *Connected) Header() wire.BlockHeader {
-	return n.header
+	_ = "STUB: not implemented"
+
+	// Height returns the height of the block extending the chain.
+	return *new(wire.BlockHeader)
 }
 
-// Height returns the height of the block extending the chain.
 func (n *Connected) Height() uint32 {
-	return n.height
+	_ = "STUB: not implemented"
+
+	// ChainTip returns the header of the new tip of the chain after processing the
+	// block being connected.
+	return 0
 }
 
-// ChainTip returns the header of the new tip of the chain after processing the
-// block being connected.
 func (n *Connected) ChainTip() wire.BlockHeader {
-	return n.header
+	_ = "STUB: not implemented"
+
+	// String returns the string representation of a Connected notification.
+	return *new(wire.BlockHeader)
 }
 
-// String returns the string representation of a Connected notification.
-func (n *Connected) String() string {
-	return fmt.Sprintf("block connected (height=%d, hash=%v)", n.height,
-		n.header.BlockHash())
-}
+func (n *Connected) String() string { _ = "STUB: not implemented"; return "" }
 
 // Disconnected if a notification that gets dispatched to clients when a reorg
 // has been detected at the tip of the chain.
@@ -74,32 +76,26 @@ var _ BlockNtfn = (*Disconnected)(nil)
 // NewBlockDisconnected creates a Disconnected notification for the given block.
 func NewBlockDisconnected(headerDisconnected wire.BlockHeader,
 	heightDisconnected uint32, chainTip wire.BlockHeader) *Disconnected {
-
-	return &Disconnected{
-		headerDisconnected: headerDisconnected,
-		heightDisconnected: heightDisconnected,
-		chainTip:           chainTip,
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // Header returns the header of the block being disconnected.
 func (n *Disconnected) Header() wire.BlockHeader {
-	return n.headerDisconnected
+	_ = "STUB: not implemented"
+	return *new(wire.BlockHeader)
 }
 
 // Height returns the height of the block being disconnected.
-func (n *Disconnected) Height() uint32 {
-	return n.heightDisconnected
-}
+func (n *Disconnected) Height() uint32 { _ = "STUB: not implemented"; return 0 }
 
 // ChainTip returns the header of the new tip of the chain after processing the
 // block being disconnected.
 func (n *Disconnected) ChainTip() wire.BlockHeader {
-	return n.chainTip
+	_ = "STUB: not implemented"
+
+	// String returns the string representation of a Disconnected notification.
+	return *new(wire.BlockHeader)
 }
 
-// String returns the string representation of a Disconnected notification.
-func (n *Disconnected) String() string {
-	return fmt.Sprintf("block disconnected (height=%d, hash=%v)",
-		n.heightDisconnected, n.headerDisconnected.BlockHash())
-}
+func (n *Disconnected) String() string { _ = "STUB: not implemented"; return "" }

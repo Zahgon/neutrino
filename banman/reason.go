@@ -26,24 +26,4 @@ const (
 )
 
 // String returns a human-readable description for the reason a peer was banned.
-func (r Reason) String() string {
-	switch r {
-	case ExceededBanThreshold:
-		return "peer exceeded ban threshold"
-
-	case NoCompactFilters:
-		return "peer was unable to serve compact filters"
-
-	case InvalidFilterHeader:
-		return "peer served invalid filter header"
-
-	case InvalidFilterHeaderCheckpoint:
-		return "peer served invalid filter header checkpoint"
-
-	case InvalidBlock:
-		return "peer served an invalid block"
-
-	default:
-		return "unknown reason"
-	}
-}
+func (r Reason) String() string { _ = "STUB: not implemented"; return "" }

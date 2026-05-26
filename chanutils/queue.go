@@ -33,111 +33,49 @@ type ConcurrentQueue[T any] struct {
 // threshold, pushes do not incur the overhead of the less efficient overflow
 // structure.
 func NewConcurrentQueue[T any](bufferSize int) *ConcurrentQueue[T] {
-	return &ConcurrentQueue[T]{
-		chanIn:   make(chan T),
-		chanOut:  make(chan T, bufferSize),
-		overflow: lru.NewList[T](),
-		quit:     make(chan struct{}),
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // ChanIn returns a channel that can be used to push new items into the queue.
 func (cq *ConcurrentQueue[T]) ChanIn() chan<- T {
-	return cq.chanIn
+	_ = "STUB: not implemented"
+
+	// ChanOut returns a channel that can be used to pop items from the queue.
+	return nil
 }
 
-// ChanOut returns a channel that can be used to pop items from the queue.
 func (cq *ConcurrentQueue[T]) ChanOut() <-chan T {
-	return cq.chanOut
+	_ = "STUB: not implemented"
+
+	// Start begins a goroutine that manages moving items from the in channel to the
+	// out channel. The queue tries to move items directly to the out channel
+	// minimize overhead, but if the out channel is full it pushes items to an
+	// overflow queue. This must be called before using the queue.
+	return nil
 }
 
-// Start begins a goroutine that manages moving items from the in channel to the
-// out channel. The queue tries to move items directly to the out channel
-// minimize overhead, but if the out channel is full it pushes items to an
-// overflow queue. This must be called before using the queue.
-func (cq *ConcurrentQueue[T]) Start() {
-	cq.started.Do(cq.start)
-}
+func (cq *ConcurrentQueue[T]) Start() { _ = "STUB: not implemented"; return }
 
-func (cq *ConcurrentQueue[T]) start() {
-	cq.wg.Add(1)
-	go func() {
-		defer cq.wg.Done()
+func (cq *ConcurrentQueue[T]) start() { _ = "STUB: not implemented"; return }
 
-	readLoop:
-		for {
-			nextElement := cq.overflow.Front()
-			if nextElement == nil {
-				// Overflow queue is empty so incoming items can
-				// be pushed directly to the output channel. If
-				// output channel is full though, push to
-				// overflow.
-				select {
-				case item, ok := <-cq.chanIn:
-					if !ok {
-						log.Warnf("ConcurrentQueue " +
-							"has exited due to " +
-							"the input channel " +
-							"being closed")
+// Overflow queue is empty so incoming items can
+// be pushed directly to the output channel. If
+// output channel is full though, push to
+// overflow.
 
-						break readLoop
-					}
-					select {
-					case cq.chanOut <- item:
-						// Optimistically push directly
-						// to chanOut.
-					default:
-						cq.overflow.PushBack(item)
-					}
-				case <-cq.quit:
-					return
-				}
-			} else {
-				// Overflow queue is not empty, so any new items
-				// get pushed to the back to preserve order.
-				select {
-				case item, ok := <-cq.chanIn:
-					if !ok {
-						log.Warnf("ConcurrentQueue " +
-							"has exited due to " +
-							"the input channel " +
-							"being closed")
+// Optimistically push directly
+// to chanOut.
 
-						break readLoop
-					}
-					cq.overflow.PushBack(item)
-				case cq.chanOut <- nextElement.Value:
-					cq.overflow.Remove(nextElement)
-				case <-cq.quit:
-					return
-				}
-			}
-		}
+// Overflow queue is not empty, so any new items
+// get pushed to the back to preserve order.
 
-		// Incoming channel has been closed. Empty overflow queue into
-		// the outgoing channel.
-		nextElement := cq.overflow.Front()
-		for nextElement != nil {
-			select {
-			case cq.chanOut <- nextElement.Value:
-				cq.overflow.Remove(nextElement)
-			case <-cq.quit:
-				return
-			}
-			nextElement = cq.overflow.Front()
-		}
+// Incoming channel has been closed. Empty overflow queue into
+// the outgoing channel.
 
-		// Close outgoing channel.
-		close(cq.chanOut)
-	}()
-}
+// Close outgoing channel.
 
 // Stop ends the goroutine that moves items from the in channel to the out
 // channel. This does not clear the queue state, so the queue can be restarted
 // without dropping items.
-func (cq *ConcurrentQueue[T]) Stop() {
-	cq.stopped.Do(func() {
-		close(cq.quit)
-		cq.wg.Wait()
-	})
-}
+func (cq *ConcurrentQueue[T]) Stop() { _ = "STUB: not implemented"; return }

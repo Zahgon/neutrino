@@ -1,10 +1,8 @@
 package banman
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"net"
 	"time"
 
@@ -73,11 +71,14 @@ type Store interface {
 
 // NewStore returns a Store backed by a database.
 func NewStore(db walletdb.DB) (Store, error) {
-	return newBanStore(db)
+	_ = "STUB: not implemented"
+	return *
+
+	// banStore is a concrete implementation of the Store interface backed by a
+	// database.
+	new(Store), nil
 }
 
-// banStore is a concrete implementation of the Store interface backed by a
-// database.
 type banStore struct {
 	db walletdb.DB
 }
@@ -88,26 +89,11 @@ var _ Store = (*banStore)(nil)
 // newBanStore creates a concrete implementation of the Store interface backed
 // by a database.
 func newBanStore(db walletdb.DB) (*banStore, error) {
-	s := &banStore{db: db}
+	_ = "STUB: not implemented"
+	return nil,
 
-	// We'll ensure the expected buckets are created upon initialization.
-	err := walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
-		banStore, err := tx.CreateTopLevelBucket(banStoreBucket)
-		if err != nil {
-			return err
-		}
-		_, err = banStore.CreateBucketIfNotExists(banBucket)
-		if err != nil {
-			return err
-		}
-		_, err = banStore.CreateBucketIfNotExists(reasonBucket)
-		return err
-	})
-	if err != nil && err != walletdb.ErrBucketExists {
-		return nil, err
-	}
-
-	return s, nil
+		// We'll ensure the expected buckets are created upon initialization.
+		nil
 }
 
 // BanIPNet creates a ban record for the IP network within the store for the
@@ -115,142 +101,40 @@ func newBanStore(db walletdb.DB) (*banStore, error) {
 // being banned. The record will exist until a call to Status is made after the
 // ban expiration.
 func (s *banStore) BanIPNet(ipNet *net.IPNet, reason Reason, duration time.Duration) error {
-	return walletdb.Update(s.db, func(tx walletdb.ReadWriteTx) error {
-		banStore := tx.ReadWriteBucket(banStoreBucket)
-		if banStore == nil {
-			return ErrCorruptedStore
-		}
-		banIndex := banStore.NestedReadWriteBucket(banBucket)
-		if banIndex == nil {
-			return ErrCorruptedStore
-		}
-		reasonIndex := banStore.NestedReadWriteBucket(reasonBucket)
-		if reasonIndex == nil {
-			return ErrCorruptedStore
-		}
-
-		var ipNetBuf bytes.Buffer
-		if err := encodeIPNet(&ipNetBuf, ipNet); err != nil {
-			return fmt.Errorf("unable to encode %v: %v", ipNet, err)
-		}
-		k := ipNetBuf.Bytes()
-
-		return addBannedIPNet(banIndex, reasonIndex, k, reason, duration)
-	})
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // UnbanIPNet removes a ban record for the IP network within the store.
-func (s *banStore) UnbanIPNet(ipNet *net.IPNet) error {
-	err := walletdb.Update(s.db, func(tx walletdb.ReadWriteTx) error {
-		banStore := tx.ReadWriteBucket(banStoreBucket)
-		if banStore == nil {
-			return ErrCorruptedStore
-		}
-
-		banIndex := banStore.NestedReadWriteBucket(banBucket)
-		if banIndex == nil {
-			return ErrCorruptedStore
-		}
-
-		reasonIndex := banStore.NestedReadWriteBucket(reasonBucket)
-		if reasonIndex == nil {
-			return ErrCorruptedStore
-		}
-
-		var ipNetBuf bytes.Buffer
-		if err := encodeIPNet(&ipNetBuf, ipNet); err != nil {
-			return fmt.Errorf("unable to encode %v: %v", ipNet,
-				err)
-		}
-
-		k := ipNetBuf.Bytes()
-
-		return removeBannedIPNet(banIndex, reasonIndex, k)
-	})
-
-	return err
-}
+func (s *banStore) UnbanIPNet(ipNet *net.IPNet) error { _ = "STUB: not implemented"; return nil }
 
 // addBannedIPNet adds an entry to the ban store for the given IP network.
 func addBannedIPNet(banIndex, reasonIndex walletdb.ReadWriteBucket,
 	ipNetKey []byte, reason Reason, duration time.Duration) error {
-
-	var v [8]byte
-	banExpiration := time.Now().Add(duration)
-	byteOrder.PutUint64(v[:], uint64(banExpiration.Unix()))
-
-	if err := banIndex.Put(ipNetKey, v[:]); err != nil {
-		return err
-	}
-	return reasonIndex.Put(ipNetKey, []byte{byte(reason)})
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // Status returns the ban status for a given IP network.
 func (s *banStore) Status(ipNet *net.IPNet) (Status, error) {
-	var banStatus Status
-	err := walletdb.Update(s.db, func(tx walletdb.ReadWriteTx) error {
-		banStore := tx.ReadWriteBucket(banStoreBucket)
-		if banStore == nil {
-			return ErrCorruptedStore
-		}
-		banIndex := banStore.NestedReadWriteBucket(banBucket)
-		if banIndex == nil {
-			return ErrCorruptedStore
-		}
-		reasonIndex := banStore.NestedReadWriteBucket(reasonBucket)
-		if reasonIndex == nil {
-			return ErrCorruptedStore
-		}
-
-		var ipNetBuf bytes.Buffer
-		if err := encodeIPNet(&ipNetBuf, ipNet); err != nil {
-			return fmt.Errorf("unable to encode %v: %v", ipNet, err)
-		}
-		k := ipNetBuf.Bytes()
-
-		status := fetchStatus(banIndex, reasonIndex, k)
-
-		// If the IP network's ban duration has expired, we can remove
-		// its entry from the store.
-		if !time.Now().Before(status.Expiration) {
-			return removeBannedIPNet(banIndex, reasonIndex, k)
-		}
-
-		banStatus = status
-		return nil
-	})
-	if err != nil {
-		return Status{}, err
-	}
-
-	return banStatus, nil
+	_ = "STUB: not implemented"
+	return *new(Status), nil
 }
+
+// If the IP network's ban duration has expired, we can remove
+// its entry from the store.
 
 // fetchStatus retrieves the ban status of the given IP network.
 func fetchStatus(banIndex, reasonIndex walletdb.ReadWriteBucket,
 	ipNetKey []byte) Status {
-
-	v := banIndex.Get(ipNetKey)
-	if v == nil {
-		return Status{}
-	}
-	reason := Reason(reasonIndex.Get(ipNetKey)[0])
-	banExpiration := time.Unix(int64(byteOrder.Uint64(v)), 0)
-
-	return Status{
-		Banned:     true,
-		Reason:     reason,
-		Expiration: banExpiration,
-	}
+	_ = "STUB: not implemented"
+	return *new(Status)
 }
 
 // removeBannedIPNet removes all references to a banned IP network within the
 // ban store.
 func removeBannedIPNet(banIndex, reasonIndex walletdb.ReadWriteBucket,
 	ipNetKey []byte) error {
-
-	if err := banIndex.Delete(ipNetKey); err != nil {
-		return err
-	}
-	return reasonIndex.Delete(ipNetKey)
+	_ = "STUB: not implemented"
+	return nil
 }

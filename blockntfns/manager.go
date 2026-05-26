@@ -2,9 +2,7 @@ package blockntfns
 
 import (
 	"errors"
-	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/lightningnetwork/lnd/queue"
 )
@@ -34,14 +32,7 @@ type newSubscription struct {
 	wg   sync.WaitGroup
 }
 
-func (s *newSubscription) cancel() {
-	s.canceled.Do(func() {
-		s.ntfnQueue.Stop()
-		close(s.quit)
-		s.wg.Wait()
-		close(s.ntfnChan)
-	})
-}
+func (s *newSubscription) cancel() { _ = "STUB: not implemented"; return }
 
 // cancelSubscription is an internal message used within the SubscriptionManager
 // to denote an existing client's intent to stop receiving block notifications.
@@ -103,87 +94,32 @@ type SubscriptionManager struct {
 // NewSubscriptionManager creates a subscription manager backed by a
 // NotificationSource.
 func NewSubscriptionManager(ntfnSource NotificationSource) *SubscriptionManager {
-	return &SubscriptionManager{
-		subscribers:         make(map[uint64]*newSubscription),
-		newSubscriptions:    make(chan *newSubscription),
-		cancelSubscriptions: make(chan *cancelSubscription),
-		ntfnSource:          ntfnSource,
-		quit:                make(chan struct{}),
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // Start starts all the goroutines required for the SubscriptionManager to carry
 // out its duties.
-func (m *SubscriptionManager) Start() {
-	if atomic.AddInt32(&m.started, 1) != 1 {
-		return
-	}
-
-	log.Debug("Starting block notifications subscription manager")
-
-	m.wg.Add(1)
-	go m.subscriptionHandler()
-}
+func (m *SubscriptionManager) Start() { _ = "STUB: not implemented"; return }
 
 // Stop stops all active goroutines required for the SubscriptionManager to
 // carry out its duties.
-func (m *SubscriptionManager) Stop() {
-	if atomic.AddInt32(&m.stopped, 1) != 1 {
-		return
-	}
-
-	log.Debug("Stopping block notifications subscription manager")
-
-	close(m.quit)
-	m.wg.Wait()
-
-	var wg sync.WaitGroup
-	wg.Add(len(m.subscribers))
-	for _, subscriber := range m.subscribers {
-		go func(s *newSubscription) {
-			defer wg.Done()
-			s.cancel()
-		}(subscriber)
-	}
-
-	wg.Wait()
-}
+func (m *SubscriptionManager) Stop() { _ = "STUB: not implemented"; return }
 
 // subscriptionHandler is the main event handler of the SubscriptionManager.
 // It's responsible for atomically handling notifications for new blocks and
 // creating/removing client block subscriptions.
 //
 // NOTE: This must be run as a goroutine.
-func (m *SubscriptionManager) subscriptionHandler() {
-	defer m.wg.Done()
+func (m *SubscriptionManager) subscriptionHandler() { _ = "STUB: not implemented"; return }
 
-	for {
-		select {
-		// A new subscription request has been received from a client.
-		case msg := <-m.newSubscriptions:
-			msg.errChan <- m.handleNewSubscription(msg)
+// A new subscription request has been received from a client.
 
-		// A request to cancel an existing subscription has been
-		// received from a client.
-		case msg := <-m.cancelSubscriptions:
-			m.handleCancelSubscription(msg)
+// A request to cancel an existing subscription has been
+// received from a client.
 
-		// A new block notification for the tip of the chain has been
-		// received from the backing NotificationSource.
-		case ntfn, ok := <-m.ntfnSource.Notifications():
-			if !ok {
-				log.Warn("Block source is unable to deliver " +
-					"new updates")
-				return
-			}
-
-			m.notifySubscribers(ntfn)
-
-		case <-m.quit:
-			return
-		}
-	}
-}
+// A new block notification for the tip of the chain has been
+// received from the backing NotificationSource.
 
 // NewSubscription creates a new block notification subscription for a client.
 // The bestHeight parameter can be used by the client to indicate its best known
@@ -197,158 +133,69 @@ func (m *SubscriptionManager) subscriptionHandler() {
 // wishes to no longer receive any notifications.
 func (m *SubscriptionManager) NewSubscription(bestHeight uint32) (*Subscription,
 	error) {
+	_ = "STUB: not implemented"
 
 	// We'll start by constructing the internal messages that the
 	// subscription handler will use to register the new client.
-	sub := &newSubscription{
-		id:         atomic.AddUint64(&m.subscriberCounter, 1),
-		ntfnChan:   make(chan BlockNtfn, 20),
-		ntfnQueue:  queue.NewConcurrentQueue(20),
-		bestHeight: bestHeight,
-		errChan:    make(chan error, 1),
-		quit:       make(chan struct{}),
-	}
-
-	// We'll start the notification queue now so that it is ready in the
-	// event that a backlog of notifications is to be delivered.
-	sub.ntfnQueue.Start()
-
-	// We'll also start a goroutine that will attempt to consume
-	// notifications from this queue by delivering them to the client
-	// itself.
-	sub.wg.Add(1)
-	go func() {
-		defer sub.wg.Done()
-
-		for {
-			select {
-			case ntfn, ok := <-sub.ntfnQueue.ChanOut():
-				if !ok {
-					return
-				}
-
-				select {
-				case sub.ntfnChan <- ntfn.(BlockNtfn):
-				case <-sub.quit:
-					return
-				case <-m.quit:
-					return
-				}
-			case <-sub.quit:
-				return
-			case <-m.quit:
-				return
-			}
-		}
-	}()
-
-	// Now, we can deliver the notification to the subscription handler.
-	select {
-	case m.newSubscriptions <- sub:
-	case <-m.quit:
-		sub.ntfnQueue.Stop()
-		return nil, ErrSubscriptionManagerStopped
-	}
-
-	// It's possible that the registration failed if we were unable to
-	// deliver the backlog of notifications, so we'll make sure to handle
-	// the error.
-	select {
-	case err := <-sub.errChan:
-		if err != nil {
-			sub.ntfnQueue.Stop()
-			return nil, err
-		}
-	case <-m.quit:
-		sub.ntfnQueue.Stop()
-		return nil, ErrSubscriptionManagerStopped
-	}
-
-	// Finally, we can return to the client with its new subscription
-	// successfully registered.
-	return &Subscription{
-		Notifications: sub.ntfnChan,
-		Cancel: func() {
-			m.cancelSubscription(sub)
-		},
-	}, nil
+	return nil, nil
 }
+
+// We'll start the notification queue now so that it is ready in the
+// event that a backlog of notifications is to be delivered.
+
+// We'll also start a goroutine that will attempt to consume
+// notifications from this queue by delivering them to the client
+// itself.
+
+// Now, we can deliver the notification to the subscription handler.
+
+// It's possible that the registration failed if we were unable to
+// deliver the backlog of notifications, so we'll make sure to handle
+// the error.
+
+// Finally, we can return to the client with its new subscription
+// successfully registered.
 
 // handleNewSubscription handles a request to create a new block subscription.
 func (m *SubscriptionManager) handleNewSubscription(sub *newSubscription) error {
-	log.Infof("Registering block subscription: id=%d", sub.id)
-
-	// We'll start by retrieving a backlog of notifications from the
-	// client's best height.
-	blocks, currentHeight, err := m.ntfnSource.NotificationsSinceHeight(
-		sub.bestHeight,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to retrieve blocks since height=%d: "+
-			"%v", sub.bestHeight, err)
-	}
-
-	// We'll then attempt to deliver these notifications.
-	log.Debugf("Delivering backlog of block notifications: id=%d, "+
-		"start_height=%d, end_height=%d", sub.id, sub.bestHeight,
-		currentHeight)
-
-	for _, block := range blocks {
-		m.notifySubscriber(sub, block)
-	}
-
-	// With the notifications delivered, we can keep track of the new client
-	// internally in order to deliver new block notifications about the
-	// chain.
-	m.subscribers[sub.id] = sub
-
+	_ = "STUB: not implemented"
 	return nil
 }
+
+// We'll start by retrieving a backlog of notifications from the
+// client's best height.
+
+// We'll then attempt to deliver these notifications.
+
+// With the notifications delivered, we can keep track of the new client
+// internally in order to deliver new block notifications about the
+// chain.
 
 // cancelSubscription sends a request to the subscription handler to cancel an
 // existing subscription.
 func (m *SubscriptionManager) cancelSubscription(sub *newSubscription) {
-	select {
-	case m.cancelSubscriptions <- &cancelSubscription{sub.id}:
-	case <-m.quit:
-	}
+	_ = "STUB: not implemented"
+	return
 }
 
 // handleCancelSubscription handles a request to cancel an existing
 // subscription.
 func (m *SubscriptionManager) handleCancelSubscription(msg *cancelSubscription) {
+	_ = "STUB: not implemented"
 	// First, we'll attempt to look up an existing susbcriber with the given
 	// ID.
-	sub, ok := m.subscribers[msg.id]
-	if !ok {
-		return
-	}
-
-	log.Infof("Canceling block subscription: id=%d", msg.id)
-
-	// If there is one, we'll stop their internal queue to no longer deliver
-	// notifications to them.
-	delete(m.subscribers, msg.id)
-	sub.cancel()
+	return
 }
+
+// If there is one, we'll stop their internal queue to no longer deliver
+// notifications to them.
 
 // notifySubscribers notifies all currently active subscribers about the block.
-func (m *SubscriptionManager) notifySubscribers(ntfn BlockNtfn) {
-	log.Tracef("Notifying %v", ntfn)
-
-	for _, subscriber := range m.subscribers {
-		m.notifySubscriber(subscriber, ntfn)
-	}
-}
+func (m *SubscriptionManager) notifySubscribers(ntfn BlockNtfn) { _ = "STUB: not implemented"; return }
 
 // notifySubscriber notifies a single subscriber about the block.
 func (m *SubscriptionManager) notifySubscriber(sub *newSubscription,
 	block BlockNtfn) {
-
-	select {
-	case sub.ntfnQueue.ChanIn() <- block:
-	case <-sub.quit:
-	case <-m.quit:
-		return
-	}
+	_ = "STUB: not implemented"
+	return
 }

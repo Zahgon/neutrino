@@ -2,13 +2,11 @@ package pushtx
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/lightninglabs/neutrino/blockntfns"
 )
 
@@ -82,42 +80,14 @@ type Broadcaster struct {
 }
 
 // NewBroadcaster creates a new Broadcaster backed by the given config.
-func NewBroadcaster(cfg *Config) *Broadcaster {
-	b := &Broadcaster{
-		cfg:           *cfg,
-		broadcastReqs: make(chan *broadcastReq),
-		confChan:      make(chan chainhash.Hash),
-		quit:          make(chan struct{}),
-	}
-
-	return b
-}
+func NewBroadcaster(cfg *Config) *Broadcaster { _ = "STUB: not implemented"; return nil }
 
 // Start starts all of the necessary steps for the Broadcaster to begin properly
 // carrying out its duties.
-func (b *Broadcaster) Start() error {
-	var returnErr error
-	b.start.Do(func() {
-		sub, err := b.cfg.SubscribeBlocks()
-		if err != nil {
-			returnErr = fmt.Errorf("unable to subscribe for block "+
-				"notifications: %v", err)
-			return
-		}
-
-		b.wg.Add(1)
-		go b.broadcastHandler(sub)
-	})
-	return returnErr
-}
+func (b *Broadcaster) Start() error { _ = "STUB: not implemented"; return nil }
 
 // Stop halts the Broadcaster from rebroadcasting pending transactions.
-func (b *Broadcaster) Stop() {
-	b.stop.Do(func() {
-		close(b.quit)
-		b.wg.Wait()
-	})
-}
+func (b *Broadcaster) Stop() { _ = "STUB: not implemented"; return }
 
 // broadcastHandler is the main event handler of the Broadcaster responsible for
 // handling new broadcast requests, rebroadcasting transactions upon every new
@@ -125,101 +95,40 @@ func (b *Broadcaster) Stop() {
 //
 // NOTE: This must be run as a goroutine.
 func (b *Broadcaster) broadcastHandler(sub *blockntfns.Subscription) {
-	defer b.wg.Done()
-	defer sub.Cancel()
-
-	log.Infof("Broadcaster now active")
-
-	// transactions is the set of transactions we have broadcast so far,
-	// and are still not confirmed.
-	transactions := make(map[chainhash.Hash]*wire.MsgTx)
-
-	// The rebroadcast semaphore is used to ensure we have only one
-	// rebroadcast running at a time.
-	rebroadcastSem := make(chan struct{}, 1)
-	rebroadcastSem <- struct{}{}
-
-	// triggerRebroadcast is a helper method that checks whether the
-	// rebroadcast semaphore is available, and if it is spawns a goroutine
-	// to rebroadcast all pending transactions.
-	triggerRebroadcast := func() {
-		select {
-		// If the rebroadcast semaphore is available, start a
-		// new goroutine to exectue a rebroadcast.
-		case <-rebroadcastSem:
-		default:
-			log.Tracef("Existing rebroadcast still in " +
-				"progress")
-			return
-		}
-
-		// Make a copy of the current set of transactions to hand to
-		// the goroutine.
-		txs := make(map[chainhash.Hash]*wire.MsgTx)
-		for k, v := range transactions {
-			txs[k] = v.Copy()
-		}
-
-		b.wg.Add(1)
-		go func() {
-			defer b.wg.Done()
-
-			b.rebroadcast(txs, b.confChan)
-			rebroadcastSem <- struct{}{}
-		}()
-	}
-
-	reBroadcastTicker := time.NewTicker(b.cfg.RebroadcastInterval)
-	defer reBroadcastTicker.Stop()
-
-	for {
-		select {
-		// A new broadcast request was submitted by an external caller.
-		case req := <-b.broadcastReqs:
-			err := b.cfg.Broadcast(req.tx)
-			if err != nil {
-				// We apply the custom err mapping function if
-				// it was supplied which allows to map other
-				// backend errors to the neutrino BroadcastError.
-				if b.cfg.MapCustomBroadcastError != nil {
-					err = b.cfg.MapCustomBroadcastError(err)
-				}
-				if !IsBroadcastError(err, Mempool) {
-					log.Errorf("Broadcast attempt "+
-						"failed: %v", err)
-					req.errChan <- err
-					continue
-				}
-			}
-
-			transactions[req.tx.TxHash()] = req.tx
-			req.errChan <- nil
-
-		// A tx was confirmed, and we can remove it from our set of
-		// transactions.
-		case txHash := <-b.confChan:
-			delete(transactions, txHash)
-
-		// A new block notification has arrived, so we'll rebroadcast
-		// all of our pending transactions.
-		case _, ok := <-sub.Notifications:
-			if !ok {
-				log.Warn("Unable to rebroadcast transactions: " +
-					"block subscription was canceled")
-				continue
-			}
-			triggerRebroadcast()
-
-		// Between blocks, we'll also try to attempt additional
-		// re-broadcasts to ensure a timely confirmation.
-		case <-reBroadcastTicker.C:
-			triggerRebroadcast()
-
-		case <-b.quit:
-			return
-		}
-	}
+	_ = "STUB: not implemented"
+	return
 }
+
+// transactions is the set of transactions we have broadcast so far,
+// and are still not confirmed.
+
+// The rebroadcast semaphore is used to ensure we have only one
+// rebroadcast running at a time.
+
+// triggerRebroadcast is a helper method that checks whether the
+// rebroadcast semaphore is available, and if it is spawns a goroutine
+// to rebroadcast all pending transactions.
+
+// If the rebroadcast semaphore is available, start a
+// new goroutine to exectue a rebroadcast.
+
+// Make a copy of the current set of transactions to hand to
+// the goroutine.
+
+// A new broadcast request was submitted by an external caller.
+
+// We apply the custom err mapping function if
+// it was supplied which allows to map other
+// backend errors to the neutrino BroadcastError.
+
+// A tx was confirmed, and we can remove it from our set of
+// transactions.
+
+// A new block notification has arrived, so we'll rebroadcast
+// all of our pending transactions.
+
+// Between blocks, we'll also try to attempt additional
+// re-broadcasts to ensure a timely confirmation.
 
 // rebroadcast rebroadcasts all of the currently pending transactions. Care has
 // been taken to ensure that the transactions are sorted in their dependency
@@ -227,95 +136,39 @@ func (b *Broadcaster) broadcastHandler(sub *blockntfns.Subscription) {
 // broadcasting them before their pending dependencies.
 func (b *Broadcaster) rebroadcast(txs map[chainhash.Hash]*wire.MsgTx,
 	confChan chan<- chainhash.Hash) {
+	_ = "STUB: not implemented"
 
 	// Return immediately if there are no transactions to re-broadcast.
-	if len(txs) == 0 {
-		return
-	}
-
-	log.Debugf("Re-broadcasting %d transactions", len(txs))
-
-	sortedTxs := wtxmgr.DependencySort(txs)
-	for _, tx := range sortedTxs {
-		// Before attempting to broadcast this transaction, we check
-		// whether we are shutting down.
-		select {
-		case <-b.quit:
-			return
-		default:
-		}
-
-		err := b.cfg.Broadcast(tx)
-		// We apply the custom err mapping function if it was supplied
-		// which allows to map other backend errors to the neutrino
-		// BroadcastError.
-		if err != nil && b.cfg.MapCustomBroadcastError != nil {
-			err = b.cfg.MapCustomBroadcastError(err)
-		}
-		switch {
-		// If the transaction has already confirmed on-chain, we can
-		// stop broadcasting it further.
-		//
-		// TODO(wilmer); This should ideally be implemented by checking
-		// the chain ourselves rather than trusting our peers.
-		case IsBroadcastError(err, Confirmed):
-			log.Debugf("Re-broadcast of txid=%v, now confirmed!",
-				tx.TxHash())
-
-			select {
-			case confChan <- tx.TxHash():
-			case <-b.quit:
-				return
-			}
-			continue
-
-		// If the transaction already exists within our peers' mempool,
-		// we'll continue to rebroadcast it to ensure it actually
-		// propagates throughout the network.
-		//
-		// TODO(wilmer): Rate limit peers that have already accepted our
-		// transaction into their mempool to prevent resending to them
-		// every time.
-		case IsBroadcastError(err, Mempool):
-			log.Debugf("Re-broadcast of txid=%v, still "+
-				"pending...", tx.TxHash())
-
-			continue
-
-		case err != nil:
-			log.Errorf("Unable to rebroadcast transaction %v: %v",
-				tx.TxHash(), err)
-			continue
-		}
-	}
+	return
 }
+
+// Before attempting to broadcast this transaction, we check
+// whether we are shutting down.
+
+// We apply the custom err mapping function if it was supplied
+// which allows to map other backend errors to the neutrino
+// BroadcastError.
+
+// If the transaction has already confirmed on-chain, we can
+// stop broadcasting it further.
+//
+// TODO(wilmer); This should ideally be implemented by checking
+// the chain ourselves rather than trusting our peers.
+
+// If the transaction already exists within our peers' mempool,
+// we'll continue to rebroadcast it to ensure it actually
+// propagates throughout the network.
+//
+// TODO(wilmer): Rate limit peers that have already accepted our
+// transaction into their mempool to prevent resending to them
+// every time.
 
 // Broadcast submits a request to the Broadcaster to reliably broadcast the
 // given transaction. An error won't be returned if the transaction already
 // exists within the mempool. Any transaction broadcast through this method will
 // be rebroadcast upon every change of the tip of the chain.
-func (b *Broadcaster) Broadcast(tx *wire.MsgTx) error {
-	errChan := make(chan error, 1)
-
-	select {
-	case b.broadcastReqs <- &broadcastReq{
-		tx:      tx,
-		errChan: errChan,
-	}:
-	case <-b.quit:
-		return ErrBroadcasterStopped
-	}
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-b.quit:
-		return ErrBroadcasterStopped
-	}
-}
+func (b *Broadcaster) Broadcast(tx *wire.MsgTx) error { _ = "STUB: not implemented"; return nil }
 
 // MarkAsConfirmed is used to tell the broadcaster that a transaction has been
 // confirmed and that it is no longer necessary to rebroadcast this transaction.
-func (b *Broadcaster) MarkAsConfirmed(txHash chainhash.Hash) {
-	b.confChan <- txHash
-}
+func (b *Broadcaster) MarkAsConfirmed(txHash chainhash.Hash) { _ = "STUB: not implemented"; return }

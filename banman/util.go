@@ -22,27 +22,11 @@ var (
 //
 // NOTE: This assumes that the address has already been resolved.
 func ParseIPNet(addr string, mask net.IPMask) (*net.IPNet, error) {
+	_ = "STUB: not implemented"
 	// If the address includes a port, we'll remove it.
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		// Address doesn't include a port.
-		host = addr
-	}
-
-	// Parse the IP from the host to ensure it is supported.
-	ip := net.ParseIP(host)
-	switch {
-	case ip.To4() != nil:
-		if mask == nil {
-			mask = defaultIPv4Mask
-		}
-	case ip.To16() != nil:
-		if mask == nil {
-			mask = defaultIPv6Mask
-		}
-	default:
-		return nil, ErrUnsupportedIP
-	}
-
-	return &net.IPNet{IP: ip.Mask(mask), Mask: mask}, nil
+	return nil, nil
 }
+
+// Address doesn't include a port.
+
+// Parse the IP from the host to ensure it is supported.

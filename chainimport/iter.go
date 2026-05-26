@@ -1,7 +1,6 @@
 package chainimport
 
 import (
-	"io"
 	"iter"
 )
 
@@ -33,23 +32,8 @@ var _ HeaderIterator = (*importSourceHeaderIterator)(nil)
 // traverses the range from start to end index.
 func (it *importSourceHeaderIterator) Iterator(startIdx,
 	endIdx uint32) iter.Seq2[Header, error] {
-
-	return func(yield func(Header, error) bool) {
-		if startIdx > endIdx {
-			yield(nil, io.EOF)
-			return
-		}
-
-		for idx := startIdx; idx <= endIdx; idx++ {
-			header, err := it.source.GetHeader(idx)
-			if err != nil && !yield(nil, err) {
-				return
-			}
-			if !yield(header, nil) {
-				return
-			}
-		}
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // BatchIterator returns a stateless iterator that yields batches of headers for
@@ -58,27 +42,8 @@ func (it *importSourceHeaderIterator) Iterator(startIdx,
 // range.
 func (it *importSourceHeaderIterator) BatchIterator(startIdx,
 	endIdx, batchSize uint32) iter.Seq2[[]Header, error] {
-
-	return func(yield func([]Header, error) bool) {
-		if startIdx > endIdx {
-			yield(nil, io.EOF)
-			return
-		}
-
-		currentIdx := startIdx
-		for currentIdx <= endIdx {
-			batch, err := it.ReadBatch(
-				currentIdx, endIdx, batchSize,
-			)
-			if err != nil && !yield(nil, err) {
-				return
-			}
-			if !yield(batch, nil) {
-				return
-			}
-			currentIdx += uint32(len(batch))
-		}
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // ReadBatch is a stateless method that collects headers from the given range
@@ -86,39 +51,19 @@ func (it *importSourceHeaderIterator) BatchIterator(startIdx,
 // if no headers are found.
 func (it *importSourceHeaderIterator) ReadBatch(
 	startIdx, endIdx, batchSize uint32) ([]Header, error) {
-
-	var headers []Header
-
-	actualEndIdx := min(endIdx, startIdx+batchSize-1)
-
-	for header, err := range it.Iterator(startIdx, actualEndIdx) {
-		if err != nil {
-			return nil, err
-		}
-
-		if header != nil {
-			headers = append(headers, header)
-		}
-	}
-
-	if len(headers) == 0 {
-		return nil, io.EOF
-	}
-
-	return headers, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 // GetStartIndex returns the configured start index for this iterator.
-func (it *importSourceHeaderIterator) GetStartIndex() uint32 {
-	return it.startIndex
-}
+func (it *importSourceHeaderIterator) GetStartIndex() uint32 { _ = "STUB: not implemented"; return 0 }
 
 // GetEndIndex returns the configured end index for this iterator.
 func (it *importSourceHeaderIterator) GetEndIndex() uint32 {
-	return it.endIndex
+	_ = "STUB: not implemented"
+
+	// GetBatchSize returns the configured batch size for this iterator.
+	return 0
 }
 
-// GetBatchSize returns the configured batch size for this iterator.
-func (it *importSourceHeaderIterator) GetBatchSize() uint32 {
-	return it.batchSize
-}
+func (it *importSourceHeaderIterator) GetBatchSize() uint32 { _ = "STUB: not implemented"; return 0 }

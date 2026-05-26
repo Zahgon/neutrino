@@ -66,36 +66,21 @@ type queryOptions struct {
 type QueryOption func(*queryOptions) // nolint
 
 // defaultQueryOptions returns a queryOptions set to package-level defaults.
-func defaultQueryOptions() *queryOptions {
-	return &queryOptions{
-		timeout:    defaultQueryTimeout,
-		encoding:   defaultQueryEncoding,
-		numRetries: defaultNumRetries,
-	}
-}
+func defaultQueryOptions() *queryOptions { _ = "STUB: not implemented"; return nil }
 
 // applyQueryOptions updates a queryOptions set with functional options.
 func (qo *queryOptions) applyQueryOptions(options ...QueryOption) {
-	for _, option := range options {
-		option(qo)
-	}
+	_ = "STUB: not implemented"
+	return
 }
 
 // NumRetries is a query option that specifies the number of times a query
 // should be retried.
-func NumRetries(num uint8) QueryOption {
-	return func(qo *queryOptions) {
-		qo.numRetries = num
-	}
-}
+func NumRetries(num uint8) QueryOption { _ = "STUB: not implemented"; return *new(QueryOption) }
 
 // NoRetryMax is a query option that can be used to disable the cap on the
 // number of retries. If this is set then NumRetries has no effect.
-func NoRetryMax() QueryOption {
-	return func(qo *queryOptions) {
-		qo.noRetryMax = true
-	}
-}
+func NoRetryMax() QueryOption { _ = "STUB: not implemented"; return *new(QueryOption) }
 
 // Timeout is a query option that specifies the total wall-clock time a batch
 // is allowed to run before it is canceled. A negative or zero value preserves
@@ -105,21 +90,17 @@ func NoRetryMax() QueryOption {
 // (defaultQueryTimeout) is used — or rely on ProgressTimeout combined with
 // external cancellation.
 func Timeout(timeout time.Duration) QueryOption {
-	return func(qo *queryOptions) {
-		// Normalize non-positive values to a 1ns deadline. Pre-PR,
-		// Timeout(0) produced time.After(0), which fires immediately;
-		// any external consumer passing an uninitialized
-		// time.Duration relied on that fail-fast behaviour. We
-		// preserve it explicitly here so that "no deadline" can never
-		// be requested by accident — it must be requested by simply
-		// not calling Timeout.
-		if timeout <= 0 {
-			qo.timeout = 1
-			return
-		}
-		qo.timeout = timeout
-	}
+	_ = "STUB: not implemented"
+	return *new(QueryOption)
 }
+
+// Normalize non-positive values to a 1ns deadline. Pre-PR,
+// Timeout(0) produced time.After(0), which fires immediately;
+// any external consumer passing an uninitialized
+// time.Duration relied on that fail-fast behaviour. We
+// preserve it explicitly here so that "no deadline" can never
+// be requested by accident — it must be requested by simply
+// not calling Timeout.
 
 // ProgressTimeout is a query option that enables a per-batch idle timer. The
 // timer is reset every time a query in the batch completes successfully; if
@@ -130,26 +111,20 @@ func Timeout(timeout time.Duration) QueryOption {
 // ProgressTimeout composes with Timeout: if both are set, whichever fires
 // first cancels the batch.
 func ProgressTimeout(timeout time.Duration) QueryOption {
-	return func(qo *queryOptions) {
-		qo.progressTimeout = timeout
-	}
+	_ = "STUB: not implemented"
+	return *new(QueryOption)
 }
 
 // Encoding is a query option that allows the caller to set a message encoding
 // for the query messages.
 func Encoding(encoding wire.MessageEncoding) QueryOption {
-	return func(qo *queryOptions) {
-		qo.encoding = encoding
-	}
+	_ = "STUB: not implemented"
+	return *new(QueryOption)
 }
 
 // Cancel takes a channel that can be closed to indicate that the query should
 // be canceled.
-func Cancel(cancel chan struct{}) QueryOption {
-	return func(qo *queryOptions) {
-		qo.cancelChan = cancel
-	}
-}
+func Cancel(cancel chan struct{}) QueryOption { _ = "STUB: not implemented"; return *new(QueryOption) }
 
 // Progress encloses the result of handling a response for a given Request,
 // determining whether the response did progress the query.

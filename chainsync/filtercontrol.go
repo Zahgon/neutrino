@@ -53,25 +53,7 @@ var filterHeaderCheckpoints = map[wire.BitcoinNet]map[uint32]*chainhash.Hash{
 // given height, and it doesn't match.
 func ValidateCFHeader(params chaincfg.Params, fType wire.FilterType,
 	height uint32, filterHeader *chainhash.Hash) error {
-
-	if fType != wire.GCSFilterRegular {
-		return fmt.Errorf("unsupported filter type %v", fType)
-	}
-
-	control, ok := filterHeaderCheckpoints[params.Net]
-	if !ok {
-		return nil
-	}
-
-	hash, ok := control[height]
-	if !ok {
-		return nil
-	}
-
-	if *filterHeader != *hash {
-		return ErrCheckpointMismatch
-	}
-
+	_ = "STUB: not implemented"
 	return nil
 }
 
@@ -83,13 +65,10 @@ func ValidateCFHeader(params chaincfg.Params, fType wire.FilterType,
 // ValidateCFHeader as an equivalent replacement.
 func ControlCFHeader(params chaincfg.Params, fType wire.FilterType,
 	height uint32, filterHeader *chainhash.Hash) error {
-
-	return ValidateCFHeader(params, fType, height, filterHeader)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // hashFromStr makes a chainhash.Hash from a valid hex string. If the string is
 // invalid, a nil pointer will be returned.
-func hashFromStr(hexStr string) *chainhash.Hash {
-	hash, _ := chainhash.NewHashFromStr(hexStr)
-	return hash
-}
+func hashFromStr(hexStr string) *chainhash.Hash { _ = "STUB: not implemented"; return nil }

@@ -2,11 +2,8 @@ package chainimport
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/lightninglabs/neutrino/chainsync"
 )
 
 // FilterHeadersImportSourceValidator implements HeaderValidator for filter
@@ -25,10 +22,8 @@ var _ HeadersValidator = (*filterHeadersImportSourceValidator)(nil)
 // headers import source.
 func newFilterHeadersImportSourceValidator(
 	targetChainParams chaincfg.Params) HeadersValidator {
-
-	return &filterHeadersImportSourceValidator{
-		targetChainParams: targetChainParams,
-	}
+	_ = "STUB: not implemented"
+	return *new(HeadersValidator)
 }
 
 // Validate performs validation on a batch of filter headers using hardcoded
@@ -50,46 +45,14 @@ func newFilterHeadersImportSourceValidator(
 // concatenation.
 func (v *filterHeadersImportSourceValidator) Validate(ctx context.Context,
 	it HeaderIterator) error {
-
-	var (
-		start     = it.GetStartIndex()
-		end       = it.GetEndIndex()
-		batchSize = it.GetBatchSize()
-		count     = 0
-	)
-
-	for batch, err := range it.BatchIterator(start, end, batchSize) {
-		if err != nil {
-			return fmt.Errorf("failed to get next batch for "+
-				"validation: %w", err)
-		}
-
-		if err := ctxCancelled(ctx); err != nil {
-			return nil
-		}
-
-		if err = v.ValidateBatch(batch); err != nil {
-			return fmt.Errorf("batch validation failed at "+
-				"position %d: %w", count, err)
-		}
-
-		count += len(batch)
-	}
-
-	log.Debugf("Successfully validated %d filter headers", count)
+	_ = "STUB: not implemented"
 	return nil
 }
 
 // ValidateBatch performs validation on a batch of filter headers.
 func (v *filterHeadersImportSourceValidator) ValidateBatch(
 	headers []Header) error {
-
-	for _, header := range headers {
-		if err := v.ValidateSingle(header); err != nil {
-			return err
-		}
-	}
-
+	_ = "STUB: not implemented"
 	return nil
 }
 
@@ -98,18 +61,7 @@ func (v *filterHeadersImportSourceValidator) ValidateBatch(
 // checkpoints. On any mismatch it returns ErrCheckpointMismatch. If the given
 // header doesn't exist in the hardcoded checkpoints, it returns no error.
 func (v *filterHeadersImportSourceValidator) ValidateSingle(h Header) error {
-	filterHeader, err := assertFilterHeader(h)
-	if err != nil {
-		return err
-	}
-
-	if err := chainsync.ValidateCFHeader(
-		v.targetChainParams, wire.GCSFilterRegular, filterHeader.Height,
-		&filterHeader.FilterHash,
-	); err != nil {
-		return err
-	}
-
+	_ = "STUB: not implemented"
 	return nil
 }
 
@@ -125,6 +77,6 @@ func (v *filterHeadersImportSourceValidator) ValidateSingle(h Header) error {
 // cryptographic relationship.
 func (v *filterHeadersImportSourceValidator) ValidatePair(prev,
 	current Header) error {
-
+	_ = "STUB: not implemented"
 	return nil
 }

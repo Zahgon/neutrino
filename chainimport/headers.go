@@ -1,8 +1,6 @@
 package chainimport
 
 import (
-	"encoding/binary"
-	"fmt"
 	"io"
 
 	"github.com/btcsuite/btcd/wire"
@@ -39,28 +37,17 @@ type blockHeader struct {
 var _ Header = (*blockHeader)(nil)
 
 // newBlockHeader creates and returns a new block header instance.
-func newBlockHeader() Header {
-	return &blockHeader{
-		BlockHeader: headerfs.BlockHeader{
-			BlockHeader: &wire.BlockHeader{},
-		},
-	}
-}
+func newBlockHeader() Header { _ = "STUB: not implemented"; return *new(Header) }
 
 // Deserialize reconstructs a block header from binary data at the specified
 // height.
 func (b *blockHeader) Deserialize(r io.Reader, height uint32) error {
+	_ = "STUB: not implemented"
 	// Deserialize the wire.BlockHeader portion.
-	if err := b.BlockHeader.BlockHeader.Deserialize(r); err != nil {
-		return fmt.Errorf("failed to deserialize wire.BlockHeader: "+
-			"%w", err)
-	}
-
-	// Set block header height.
-	b.BlockHeader.Height = height
-
 	return nil
 }
+
+// Set block header height.
 
 // filterHeader represents a filter header that can be imported into the chain
 // store. It wraps a headerfs.FilterHeader with additional functionality needed
@@ -74,25 +61,17 @@ type filterHeader struct {
 var _ Header = (*filterHeader)(nil)
 
 // newFilterHeader creates and returns a new filter header instance.
-func newFilterHeader() Header {
-	return &filterHeader{
-		FilterHeader: headerfs.FilterHeader{},
-	}
-}
+func newFilterHeader() Header { _ = "STUB: not implemented"; return *new(Header) }
 
 // Deserialize reconstructs a filter header from binary data at the specified
 // height.
 func (f *filterHeader) Deserialize(r io.Reader, height uint32) error {
+	_ = "STUB: not implemented"
 	// Read the filter hash (32 bytes).
-	if _, err := io.ReadFull(r, f.FilterHash[:]); err != nil {
-		return fmt.Errorf("failed to read filter hash: %w", err)
-	}
-
-	// Set filter header height.
-	f.FilterHeader.Height = height
-
 	return nil
 }
+
+// Set filter header height.
 
 // headerMetadata contains metadata for a headers import operation, including
 // the range and size information for the headers being imported.
@@ -133,64 +112,12 @@ type importMetadata struct {
 // encode writes the import metadata to the provided writer in binary format.
 //
 // NOTE: The writer's position is supposed to be at the beginning of the file.
-func (m *importMetadata) encode(w io.Writer) error {
-	err := binary.Write(w, binary.LittleEndian, m.networkMagic)
-	if err != nil {
-		return fmt.Errorf("failed to write chain type: %w", err)
-	}
-
-	if err = binary.Write(w, binary.LittleEndian, m.version); err != nil {
-		return fmt.Errorf("failed to write version: %w", err)
-	}
-
-	err = binary.Write(w, binary.LittleEndian, byte(m.headerType))
-	if err != nil {
-		return fmt.Errorf("failed to write header type: %w", err)
-	}
-
-	err = binary.Write(w, binary.LittleEndian, m.startHeight)
-	if err != nil {
-		return fmt.Errorf("failed to write start height: %w", err)
-	}
-
-	return nil
-}
+func (m *importMetadata) encode(w io.Writer) error { _ = "STUB: not implemented"; return nil }
 
 // decode reads the import metadata from the provided reader.
 //
 // NOTE: The reader's position is supposed to be at the beginning of the file.
-func (m *importMetadata) decode(r io.Reader) error {
-	err := binary.Read(r, binary.LittleEndian, &m.networkMagic)
-	if err != nil {
-		return fmt.Errorf("failed to read network magic: %w", err)
-	}
-
-	if err = binary.Read(r, binary.LittleEndian, &m.version); err != nil {
-		return fmt.Errorf("failed to read version: %w", err)
-	}
-
-	if m.version != 0 {
-		return fmt.Errorf("unsupported header format version %d, "+
-			"only version 0 (uncompressed) is currently supported",
-			m.version)
-	}
-
-	var headerTypeByte byte
-	err = binary.Read(r, binary.LittleEndian, &headerTypeByte)
-	if err != nil {
-		return fmt.Errorf("failed to read header type: %w", err)
-	}
-	m.headerType = headerfs.HeaderType(headerTypeByte)
-
-	err = binary.Read(r, binary.LittleEndian, &m.startHeight)
-	if err != nil {
-		return fmt.Errorf("failed to read start height: %w", err)
-	}
-
-	return nil
-}
+func (m *importMetadata) decode(r io.Reader) error { _ = "STUB: not implemented"; return nil }
 
 // size returns the binary size of the import metadata in bytes.
-func (m *importMetadata) size() int {
-	return ImportMetadataSize
-}
+func (m *importMetadata) size() int { _ = "STUB: not implemented"; return 0 }

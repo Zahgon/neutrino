@@ -16,42 +16,32 @@ type workQueue struct {
 // Len returns the number of nodes in the priority queue.
 //
 // NOTE: This is part of the heap.Interface implementation.
-func (w *workQueue) Len() int { return len(w.tasks) }
+func (w *workQueue) Len() int {
+	_ = "STUB: not implemented"
 
-// Less returns whether the item in the priority queue with index i should sort
-// before the item with index j.
-//
-// NOTE: This is part of the heap.Interface implementation.
-func (w *workQueue) Less(i, j int) bool {
-	return w.tasks[i].Index() < w.tasks[j].Index()
+	// Less returns whether the item in the priority queue with index i should sort
+	// before the item with index j.
+	//
+	// NOTE: This is part of the heap.Interface implementation.
+	return 0
 }
+
+func (w *workQueue) Less(i, j int) bool { _ = "STUB: not implemented"; return false }
 
 // Swap swaps the nodes at the passed indices in the priority queue.
 //
 // NOTE: This is part of the heap.Interface implementation.
-func (w *workQueue) Swap(i, j int) {
-	w.tasks[i], w.tasks[j] = w.tasks[j], w.tasks[i]
-}
+func (w *workQueue) Swap(i, j int) { _ = "STUB: not implemented"; return }
 
 // Push add x as element Len().
 //
 // NOTE: This is part of the heap.Interface implementation.
-func (w *workQueue) Push(x interface{}) {
-	w.tasks = append(w.tasks, x.(Task))
-}
+func (w *workQueue) Push(x interface{}) { _ = "STUB: not implemented"; return }
 
 // Pop removes and returns element Len()-1.
 //
 // NOTE: This is part of the heap.Interface implementation.
-func (w *workQueue) Pop() interface{} {
-	n := len(w.tasks)
-	x := w.tasks[n-1]
-	w.tasks[n-1] = nil
-	w.tasks = w.tasks[0 : n-1]
-	return x
-}
+func (w *workQueue) Pop() interface{} { _ = "STUB: not implemented"; return nil }
 
 // Peek returns the first item in the queue.
-func (w *workQueue) Peek() interface{} {
-	return w.tasks[0]
-}
+func (w *workQueue) Peek() interface{} { _ = "STUB: not implemented"; return nil }

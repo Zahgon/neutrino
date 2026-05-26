@@ -1,7 +1,6 @@
 package lru
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/lightninglabs/neutrino/cache"
@@ -52,242 +51,116 @@ type CacheOption[K comparable, V cache.Value] func(*Cache[K, V])
 // when an element is deleted from the cache.
 func WithDeleteCallback[K comparable, V cache.Value](
 	callback OnDeleteCallback[K, V]) CacheOption[K, V] {
-
-	return func(c *Cache[K, V]) {
-		c.onDelete = fn.Some(callback)
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // NewCache return a cache with specified capacity, the cache's size can't
 // exceed that given capacity.
 func NewCache[K comparable, V cache.Value](capacity uint64,
 	opts ...CacheOption[K, V]) *Cache[K, V] {
-
-	c := &Cache[K, V]{
-		capacity: capacity,
-		ll:       NewList[entry[K, V]](),
-		cache:    syncMap[K, *Element[entry[K, V]]]{},
-	}
-
-	// Apply all options.
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	return c
+	_ = "STUB: not implemented"
+	return nil
 }
+
+// Apply all options.
 
 // evict will evict as many elements as necessary to make enough space for a new
 // element with size needed to be inserted.
 func (c *Cache[K, V]) evict(needed uint64) (bool, error) {
-	if needed > c.capacity {
-		return false, fmt.Errorf("can't evict %v elements in size, "+
-			"since capacity is %v", needed, c.capacity)
-	}
-
-	evicted := false
-	for c.capacity-c.size < needed {
-		// We still need to evict some more elements.
-		if c.ll.Len() == 0 {
-			// We should never reach here.
-			return false, fmt.Errorf("all elements got evicted, "+
-				"yet still need to evict %v, likelihood of "+
-				"error during size calculation",
-				needed-(c.capacity-c.size))
-		}
-
-		// Find the least recently used item.
-		if elr := c.ll.Back(); elr != nil {
-			// Determine lru item's size.
-			ce := elr.Value
-			es, err := ce.value.Size()
-			if err != nil {
-				return false, fmt.Errorf("couldn't determine "+
-					"size of existing cache value %v", err)
-			}
-
-			// Account for that element's removal in evicted and
-			// cache size.
-			c.size -= es
-
-			// Call the onDelete callback if set for the element.
-			c.onDelete.WhenSome(func(cb OnDeleteCallback[K, V]) {
-				cb(ce.key, ce.value)
-			})
-
-			// Remove the element from the cache.
-			c.ll.Remove(elr)
-			c.cache.Delete(ce.key)
-			evicted = true
-		}
-	}
-
-	return evicted, nil
+	_ = "STUB: not implemented"
+	return false, nil
 }
+
+// We still need to evict some more elements.
+
+// We should never reach here.
+
+// Find the least recently used item.
+
+// Determine lru item's size.
+
+// Account for that element's removal in evicted and
+// cache size.
+
+// Call the onDelete callback if set for the element.
+
+// Remove the element from the cache.
 
 // Put inserts a given (key,value) pair into the cache. If the key already
 // exists, it will replace value and update it to be most recent item in cache.
 // The return value indicates whether items had to be evicted to make room for
 // the new element.
 func (c *Cache[K, V]) Put(key K, value V) (bool, error) {
-	vs, err := value.Size()
-	if err != nil {
-		return false, fmt.Errorf("couldn't determine size of cache "+
-			"value: %v", err)
-	}
-
-	if vs > c.capacity {
-		return false, fmt.Errorf("can't insert entry of size %v into "+
-			"cache with capacity %v", vs, c.capacity)
-	}
-
-	// Load the element.
-	el, ok := c.cache.Load(key)
-
-	// Update the internal list inside a lock.
-	c.mtx.Lock()
-
-	// If the element already exists, remove it and decrease cache's size.
-	if ok {
-		es, err := el.Value.value.Size()
-		if err != nil {
-			c.mtx.Unlock()
-
-			return false, fmt.Errorf("couldn't determine size of "+
-				"existing cache value %v", err)
-		}
-
-		c.ll.Remove(el)
-		c.size -= es
-	}
-
-	// Then we need to make sure we have enough space for the element, evict
-	// elements if we need more space.
-	evicted, err := c.evict(vs)
-	if err != nil {
-		return false, err
-	}
-
-	// We have made enough space in the cache, so just insert it.
-	el = c.ll.PushFront(entry[K, V]{key: key, value: value})
-	c.size += vs
-
-	// Release the lock.
-	c.mtx.Unlock()
-
-	// Update the cache.
-	c.cache.Store(key, el)
-
-	return evicted, nil
+	_ = "STUB: not implemented"
+	return false, nil
 }
+
+// Load the element.
+
+// Update the internal list inside a lock.
+
+// If the element already exists, remove it and decrease cache's size.
+
+// Then we need to make sure we have enough space for the element, evict
+// elements if we need more space.
+
+// We have made enough space in the cache, so just insert it.
+
+// Release the lock.
+
+// Update the cache.
 
 // Get will return value for a given key, making the element the most recently
 // accessed item in the process. Will return nil if the key isn't found.
-func (c *Cache[K, V]) Get(key K) (V, error) {
-	var defaultVal V
+func (c *Cache[K, V]) Get(key K) (V, error) { _ = "STUB: not implemented"; return *new(V), nil }
 
-	el, ok := c.cache.Load(key)
-	if !ok {
-		// Element not found in the cache.
-		return defaultVal, cache.ErrElementNotFound
-	}
+// Element not found in the cache.
 
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	// When the cache needs to evict a element to make space for another
-	// one, it starts eviction from the back, so by moving this element to
-	// the front, it's eviction is delayed because it's recently accessed.
-	c.ll.MoveToFront(el)
-	return el.Value.value, nil
-}
+// When the cache needs to evict a element to make space for another
+// one, it starts eviction from the back, so by moving this element to
+// the front, it's eviction is delayed because it's recently accessed.
 
 // Len returns number of elements in the cache.
-func (c *Cache[K, V]) Len() int {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
-
-	return c.ll.Len()
-}
+func (c *Cache[K, V]) Len() int { _ = "STUB: not implemented"; return 0 }
 
 // Delete removes an item from the cache.
-func (c *Cache[K, V]) Delete(key K) {
-	c.LoadAndDelete(key)
-}
+func (c *Cache[K, V]) Delete(key K) { _ = "STUB: not implemented"; return }
 
 // LoadAndDelete queries an item and deletes it from the cache using the
 // specified key.
 func (c *Cache[K, V]) LoadAndDelete(key K) (V, bool) {
-	var defaultVal V
+	_ = "STUB: not implemented"
 
 	// Noop if the element doesn't exist.
-	el, ok := c.cache.LoadAndDelete(key)
-	if !ok {
-		return defaultVal, false
-	}
-
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	// Get its size.
-	vs, err := el.Value.value.Size()
-	if err != nil {
-		return defaultVal, false
-	}
-
-	// Call the onDelete callback if set for the element.
-	c.onDelete.WhenSome(func(cb OnDeleteCallback[K, V]) {
-		cb(key, el.Value.value)
-	})
-
-	// Remove the element from the list and update the cache's size.
-	c.ll.Remove(el)
-	c.size -= vs
-
-	return el.Value.value, true
+	return *new(V), false
 }
+
+// Get its size.
+
+// Call the onDelete callback if set for the element.
+
+// Remove the element from the list and update the cache's size.
 
 // Range iterates the cache without any ordering.
 func (c *Cache[K, V]) Range(visitor func(K, V) bool) {
+	_ = "STUB: not implemented"
 	// valueVisitor is a closure to help unwrap the value from the cache.
-	valueVisitor := func(key K, value *Element[entry[K, V]]) bool {
-		return visitor(key, value.Value.value)
-	}
-
-	c.cache.Range(valueVisitor)
+	return
 }
 
 // RangeFILO iterates the items with FILO order, behaving like a stack.
-func (c *Cache[K, V]) RangeFILO(visitor func(K, V) bool) {
-	for e := c.ll.Front(); e != nil; e = e.Next() {
-		next := visitor(e.Value.key, e.Value.value)
+func (c *Cache[K, V]) RangeFILO(visitor func(K, V) bool) { _ = "STUB: not implemented"; return }
 
-		// Stops the iteration if the visitor returns false to mimick
-		// the same behavior of `Range`.
-		if !next {
-			return
-		}
-	}
-}
+// Stops the iteration if the visitor returns false to mimick
+// the same behavior of `Range`.
 
 // RangeFIFO iterates the items with FIFO order, behaving like a queue.
-func (c *Cache[K, V]) RangeFIFO(visitor func(K, V) bool) {
-	for e := c.ll.Back(); e != nil; e = e.Prev() {
-		next := visitor(e.Value.key, e.Value.value)
+func (c *Cache[K, V]) RangeFIFO(visitor func(K, V) bool) { _ = "STUB: not implemented"; return }
 
-		// Stops the iteration if the visitor returns false to mimick
-		// the same behavior of `Range`.
-		if !next {
-			return
-		}
-	}
-}
+// Stops the iteration if the visitor returns false to mimick
+// the same behavior of `Range`.
 
 // Size returns the total size of all elements in the cache. It uses
 // the same units produced by V.Size().
-func (c *Cache[K, V]) Size() uint64 {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
-
-	return c.size
-}
+func (c *Cache[K, V]) Size() uint64 { _ = "STUB: not implemented"; return 0 }

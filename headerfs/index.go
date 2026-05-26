@@ -1,11 +1,7 @@
 package headerfs
 
 import (
-	"bytes"
-	"encoding/binary"
-	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -88,42 +84,14 @@ const (
 )
 
 // String returns the string representation of the HeaderType.
-func (h HeaderType) String() string {
-	switch h {
-	case Block:
-		return "BlockHeader"
-	case RegularFilter:
-		return "RegularFilterHeader"
-	default:
-		return fmt.Sprintf("UnknownHeaderType(%d)", h)
-	}
-}
+func (h HeaderType) String() string { _ = "STUB: not implemented"; return "" }
 
 // Size returns the size in bytes for a given header type.
-func (h HeaderType) Size() (int, error) {
-	switch h {
-	case Block:
-		return BlockHeaderSize, nil
-	case RegularFilter:
-		return RegularFilterHeaderSize, nil
-	default:
-		return UnknownHeaderSize, fmt.Errorf("unknown header type: "+
-			"%d", h)
-	}
-}
+func (h HeaderType) Size() (int, error) { _ = "STUB: not implemented"; return 0, nil }
 
 // TipKey returns the current tip key for the given header type.
 // Returns an error if the header type is unknown.
-func (h HeaderType) TipKey() ([]byte, error) {
-	switch h {
-	case Block:
-		return bitcoinTip, nil
-	case RegularFilter:
-		return regFilterTip, nil
-	default:
-		return nil, fmt.Errorf("unknown header type: %d", h)
-	}
-}
+func (h HeaderType) TipKey() ([]byte, error) { _ = "STUB: not implemented"; return nil, nil }
 
 // headerIndex is an index stored within the database that allows for random
 // access into the on-disk header file. This, in conjunction with a flat file
@@ -139,27 +107,11 @@ type headerIndex struct {
 // newHeaderIndex creates a new headerIndex given an already open database, and
 // a particular header type.
 func newHeaderIndex(db walletdb.DB, indexType HeaderType) (*headerIndex, error) {
+	_ = "STUB: not implemented"
 	// As an initially step, we'll attempt to create all the buckets
 	// necessary for functioning of the index. If these buckets has already
 	// been created, then we can exit early.
-	err := walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
-		rootBucket, err := tx.CreateTopLevelBucket(indexBucket)
-		if err == walletdb.ErrBucketExists {
-			rootBucket = tx.ReadWriteBucket(indexBucket)
-		} else if err != nil {
-			return err
-		}
-
-		return ensureIndexSubBuckets(rootBucket)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &headerIndex{
-		db:        db,
-		indexType: indexType,
-	}, nil
+	return nil, nil
 }
 
 // ensureIndexSubBuckets pre-creates the full set of hash-prefix sub-buckets
@@ -170,20 +122,8 @@ func newHeaderIndex(db walletdb.DB, indexType HeaderType) (*headerIndex, error) 
 // per header. The marker key indexSubBucketsReady gates re-running this loop
 // on subsequent startups.
 func ensureIndexSubBuckets(rootBucket walletdb.ReadWriteBucket) error {
-	if rootBucket.Get(indexSubBucketsReady) != nil {
-		return nil
-	}
-
-	var prefix [numSubBucketBytes]byte
-	for i := 0; i <= 0xffff; i++ {
-		binary.BigEndian.PutUint16(prefix[:], uint16(i))
-		_, err := rootBucket.CreateBucketIfNotExists(prefix[:])
-		if err != nil {
-			return err
-		}
-	}
-
-	return rootBucket.Put(indexSubBucketsReady, []byte{1})
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // headerEntry is an internal type that's used to quickly map a (height, hash)
@@ -203,117 +143,56 @@ type headerBatch []headerEntry
 //
 // NOTE: This is part of the sort.Interface implementation.
 func (h headerBatch) Len() int {
-	return len(h)
+	_ = "STUB: not implemented"
+
+	// Less reports where the entry with index i should sort before the entry with
+	// index j. As we want to ensure the items are written in sequential order,
+	// items with the "first" hash.
+	//
+	// NOTE: This is part of the sort.Interface implementation.
+	return 0
 }
 
-// Less reports where the entry with index i should sort before the entry with
-// index j. As we want to ensure the items are written in sequential order,
-// items with the "first" hash.
-//
-// NOTE: This is part of the sort.Interface implementation.
-func (h headerBatch) Less(i, j int) bool {
-	return bytes.Compare(h[i].hash[:], h[j].hash[:]) < 0
-}
+func (h headerBatch) Less(i, j int) bool { _ = "STUB: not implemented"; return false }
 
 // Swap swaps the elements with indexes i and j.
 //
 // NOTE: This is part of the sort.Interface implementation.
-func (h headerBatch) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
-}
+func (h headerBatch) Swap(i, j int) { _ = "STUB: not implemented"; return }
 
 // addHeaders writes a batch of header entries in a single atomic batch.
 func (h *headerIndex) addHeaders(batch headerBatch) error {
+	_ = "STUB: not implemented"
 	// If we're writing a 0-length batch, make no changes and return.
-	if len(batch) == 0 {
-		return nil
-	}
-
-	// In order to ensure optimal write performance, we'll ensure that the
-	// items are sorted by their hash before insertion into the database.
-	sort.Sort(batch)
-
-	return walletdb.Update(h.db, func(tx walletdb.ReadWriteTx) error {
-		rootBucket := tx.ReadWriteBucket(indexBucket)
-
-		var tipKey []byte
-
-		// Based on the specified index type of this instance of the
-		// index, we'll grab the key that tracks the tip of the chain
-		// so we can update the index once all the header entries have
-		// been updated.
-		// TODO(roasbeef): only need block tip?
-		tipKey, err := h.indexType.TipKey()
-		if err != nil {
-			return err
-		}
-
-		var (
-			chainTipHash   chainhash.Hash
-			chainTipHeight uint32
-		)
-
-		// Since the batch is sorted by hash, consecutive entries tend
-		// to share the same sub-bucket prefix. We cache the last
-		// resolved sub-bucket and prefix so that we only re-resolve
-		// when the prefix changes, avoiding a NestedReadWriteBucket
-		// call per header. The required sub-buckets are pre-created in
-		// newHeaderIndex via ensureIndexSubBuckets, so a missing
-		// sub-bucket here is a hard error.
-		var (
-			subBucket        walletdb.ReadWriteBucket
-			currentSubPrefix []byte
-		)
-
-		for _, header := range batch {
-			prefix := header.hash[0:numSubBucketBytes]
-			if !bytes.Equal(currentSubPrefix, prefix) {
-				subBucket = rootBucket.NestedReadWriteBucket(
-					prefix,
-				)
-				if subBucket == nil {
-					return fmt.Errorf("missing header "+
-						"index sub-bucket %x", prefix)
-				}
-
-				currentSubPrefix = append(
-					currentSubPrefix[:0], prefix...,
-				)
-			}
-
-			if err := putHeaderEntryInBucket(
-				subBucket, header,
-			); err != nil {
-				return err
-			}
-
-			// TODO(roasbeef): need to remedy if side-chain
-			// tracking added
-			if header.height >= chainTipHeight {
-				chainTipHash = header.hash
-				chainTipHeight = header.height
-			}
-		}
-
-		return rootBucket.Put(tipKey, chainTipHash[:])
-	})
+	return nil
 }
+
+// In order to ensure optimal write performance, we'll ensure that the
+// items are sorted by their hash before insertion into the database.
+
+// Based on the specified index type of this instance of the
+// index, we'll grab the key that tracks the tip of the chain
+// so we can update the index once all the header entries have
+// been updated.
+// TODO(roasbeef): only need block tip?
+
+// Since the batch is sorted by hash, consecutive entries tend
+// to share the same sub-bucket prefix. We cache the last
+// resolved sub-bucket and prefix so that we only re-resolve
+// when the prefix changes, avoiding a NestedReadWriteBucket
+// call per header. The required sub-buckets are pre-created in
+// newHeaderIndex via ensureIndexSubBuckets, so a missing
+// sub-bucket here is a hard error.
+
+// TODO(roasbeef): need to remedy if side-chain
+// tracking added
 
 // heightFromHash returns the height of the entry that matches the specified
 // height. With this height, the caller is then able to seek to the appropriate
 // spot in the flat files in order to extract the true header.
 func (h *headerIndex) heightFromHash(hash *chainhash.Hash) (uint32, error) {
-	var height uint32
-	err := walletdb.View(h.db, func(tx walletdb.ReadTx) error {
-		var err error
-		height, err = h.heightFromHashWithTx(tx, hash)
-		return err
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	return height, nil
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
 // heightFromHashWithTx returns the height of the entry that matches the
@@ -322,69 +201,33 @@ func (h *headerIndex) heightFromHash(hash *chainhash.Hash) (uint32, error) {
 // order to extract the true header.
 func (h *headerIndex) heightFromHashWithTx(tx walletdb.ReadTx,
 	hash *chainhash.Hash) (uint32, error) {
-
-	rootBucket := tx.ReadBucket(indexBucket)
-
-	return getHeaderEntry(rootBucket, hash[:])
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
 // chainTip returns the best hash and height that the index knows of.
 func (h *headerIndex) chainTip() (*chainhash.Hash, uint32, error) {
-	var (
-		tipHeight uint32
-		tipHash   *chainhash.Hash
-	)
-
-	err := walletdb.View(h.db, func(tx walletdb.ReadTx) error {
-		var err error
-		tipHash, tipHeight, err = h.chainTipWithTx(tx)
-		return err
-	})
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return tipHash, tipHeight, nil
+	_ = "STUB: not implemented"
+	return nil, 0, nil
 }
 
 // chainTipWithTx returns the best hash and height that the index knows of by
 // using the given DB transaction.
 func (h *headerIndex) chainTipWithTx(tx walletdb.ReadTx) (*chainhash.Hash,
 	uint32, error) {
-
-	rootBucket := tx.ReadBucket(indexBucket)
-
-	// Based on the specified index type of this instance of the index,
-	// we'll grab the particular key that tracks the chain tip.
-	tipKey, err := h.indexType.TipKey()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Now that we have the particular tip key for this header type, we'll
-	// fetch the hash for this tip, then using that we'll fetch the height
-	// that corresponds to that hash.
-	tipHashBytes := rootBucket.Get(tipKey)
-	if tipHashBytes == nil {
-		return nil, 0, fmt.Errorf(
-			"the key %s does not exist in bucket %s",
-			tipKey, indexBucket,
-		)
-	}
-	tipHeight, err := getHeaderEntry(rootBucket, tipHashBytes)
-	if err != nil {
-		return nil, 0, ErrHeightNotFound
-	}
-
-	// With the height fetched, we can now populate our return
-	// parameters.
-	tipHash, err := chainhash.NewHash(tipHashBytes)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return tipHash, tipHeight, nil
+	_ = "STUB: not implemented"
+	return nil, 0, nil
 }
+
+// Based on the specified index type of this instance of the index,
+// we'll grab the particular key that tracks the chain tip.
+
+// Now that we have the particular tip key for this header type, we'll
+// fetch the hash for this tip, then using that we'll fetch the height
+// that corresponds to that hash.
+
+// With the height fetched, we can now populate our return
+// parameters.
 
 // truncateIndices truncates the index for a particular header type by removing
 // a set of header entries. The passed newTip pointer should point to the hash
@@ -394,63 +237,31 @@ func (h *headerIndex) chainTipWithTx(tx walletdb.ReadTx) (*chainhash.Hash,
 // well, then the remove flag should be set to true.
 func (h *headerIndex) truncateIndices(newTip *chainhash.Hash,
 	blockHeadersToTruncate []*chainhash.Hash, remove bool) error {
-
-	if remove && len(blockHeadersToTruncate) == 0 {
-		return errors.New("remove flag set but headers to truncate " +
-			"beyond new tip not provided")
-	}
-
-	if !remove && len(blockHeadersToTruncate) != 0 {
-		return errors.New("headers to truncate beyond new tip " +
-			"provided but remove flag not set")
-	}
-
-	return walletdb.Update(h.db, func(tx walletdb.ReadWriteTx) error {
-		rootBucket := tx.ReadWriteBucket(indexBucket)
-
-		var tipKey []byte
-
-		// Based on the specified index type of this instance of the
-		// index, we'll grab the key that tracks the tip of the chain
-		// we need to update.
-		tipKey, err := h.indexType.TipKey()
-		if err != nil {
-			return err
-		}
-
-		// If the remove flag is set, then we'll also delete those
-		// entries from the database as the primary index
-		// (block headers) is being rolled back.
-		if remove {
-			if err := deleteHeaderEntries(
-				rootBucket, blockHeadersToTruncate,
-			); err != nil {
-				return err
-			}
-		}
-
-		// With the now stale entry deleted, we'll update the chain tip
-		// to point to the new hash.
-		return rootBucket.Put(tipKey, newTip[:])
-	})
+	_ = "STUB: not implemented"
+	return nil
 }
+
+// Based on the specified index type of this instance of the
+// index, we'll grab the key that tracks the tip of the chain
+// we need to update.
+
+// If the remove flag is set, then we'll also delete those
+// entries from the database as the primary index
+// (block headers) is being rolled back.
+
+// With the now stale entry deleted, we'll update the chain tip
+// to point to the new hash.
 
 // putHeaderEntry stores a headerEntry into the bbolt database. The entry is
 // always placed below a sub bucket with the first few bytes of the hash as its
 // name to improve write performance.
 func putHeaderEntry(rootBucket walletdb.ReadWriteBucket,
 	header headerEntry) error {
+	_ = "STUB: not implemented"
 
 	// Place key in a sub bucket to improve bbolt memory behavior at the
 	// expense of a slight increase in access latency.
-	subBucket, err := rootBucket.CreateBucketIfNotExists(
-		header.hash[0:numSubBucketBytes],
-	)
-	if err != nil {
-		return err
-	}
-
-	return putHeaderEntryInBucket(subBucket, header)
+	return nil
 }
 
 // putHeaderEntryInBucket writes a single header entry into an already
@@ -458,10 +269,8 @@ func putHeaderEntry(rootBucket walletdb.ReadWriteBucket,
 // callers (like addHeaders) reuse a cached sub-bucket across many entries.
 func putHeaderEntryInBucket(subBucket walletdb.ReadWriteBucket,
 	header headerEntry) error {
-
-	var heightBytes [4]byte
-	binary.BigEndian.PutUint32(heightBytes[:], header.height)
-	return subBucket.Put(header.hash[:], heightBytes[:])
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // getHeaderEntry tries to look up the height of a header by its hash. It first
@@ -471,23 +280,15 @@ func putHeaderEntryInBucket(subBucket walletdb.ReadWriteBucket,
 // either places, ErrHashNotFound is returned.
 func getHeaderEntry(rootBucket walletdb.ReadBucket, hashBytes []byte) (uint32,
 	error) {
-
-	subBucket := rootBucket.NestedReadBucket(hashBytes[0:numSubBucketBytes])
-	if subBucket == nil {
-		// Fall back to the old method which will return the
-		// ErrHashNotFound error if there's no key in the root bucket.
-		return getHeaderEntryFallback(rootBucket, hashBytes)
-	}
-
-	heightBytes := subBucket.Get(hashBytes)
-	if heightBytes == nil {
-		// Fall back to the old method which will return the
-		// ErrHashNotFound error if there's no key in the root bucket.
-		return getHeaderEntryFallback(rootBucket, hashBytes)
-	}
-
-	return binary.BigEndian.Uint32(heightBytes), nil
+	_ = "STUB: not implemented"
+	return 0, nil
 }
+
+// Fall back to the old method which will return the
+// ErrHashNotFound error if there's no key in the root bucket.
+
+// Fall back to the old method which will return the
+// ErrHashNotFound error if there's no key in the root bucket.
 
 // getHeaderEntryFallback tries to look up the height of a header by its hash by
 // looking at the root bucket directly, which is the old place we used to store
@@ -495,16 +296,12 @@ func getHeaderEntry(rootBucket walletdb.ReadBucket, hashBytes []byte) (uint32,
 // returned.
 func getHeaderEntryFallback(rootBucket walletdb.ReadBucket,
 	hashBytes []byte) (uint32, error) {
-
-	heightBytes := rootBucket.Get(hashBytes)
-	if heightBytes == nil {
-		// If the hash wasn't found, then we don't know of this hash
-		// within the index.
-		return 0, ErrHashNotFound
-	}
-
-	return binary.BigEndian.Uint32(heightBytes), nil
+	_ = "STUB: not implemented"
+	return 0, nil
 }
+
+// If the hash wasn't found, then we don't know of this hash
+// within the index.
 
 // deleteHeaderEntries tries to remove multiple header entries from the bbolt
 // database. For each header hash, it first looks if a key exists in the old
@@ -512,60 +309,28 @@ func getHeaderEntryFallback(rootBucket walletdb.ReadBucket,
 // attempted to be deleted from the appropriate sub-bucket instead.
 func deleteHeaderEntries(rootBucket walletdb.ReadWriteBucket,
 	headerHashes []*chainhash.Hash) error {
-
-	if len(headerHashes) == 0 {
-		return nil
-	}
-
-	// Group hashes by their sub-bucket for more efficient deletion.
-	bySubBucket := make(map[string][]*chainhash.Hash)
-	rootBucketHashes := make([]*chainhash.Hash, 0, len(headerHashes))
-
-	// Check which hashes are in the root bucket and group the rest by their
-	// sub-bucket prefix.
-	for _, hash := range headerHashes {
-		// Convert hash to bytes for DB operations.
-		hashBytes := hash.CloneBytes()
-
-		// In case this header was stored in the old place
-		// (the root bucket directly), let's check and mark it for
-		// removal from there.
-		if len(rootBucket.Get(hashBytes)) == 4 {
-			rootBucketHashes = append(rootBucketHashes, hash)
-			continue
-		}
-		// The hash wasn't stored in the root bucket. So we need
-		// to use the sub-bucket. We extract the prefix to
-		// determine which sub-bucket to use.
-		prefix := string(hashBytes[0:numSubBucketBytes])
-		bySubBucket[prefix] = append(bySubBucket[prefix], hash)
-	}
-
-	// Delete entries from root bucket.
-	for _, hash := range rootBucketHashes {
-		hashBytes := hash.CloneBytes()
-		if err := rootBucket.Delete(hashBytes); err != nil {
-			return err
-		}
-	}
-
-	// Delete enties from sub-buckets.
-	for prefix, hashes := range bySubBucket {
-		// Try to get the sub-bucket for this prefix. If it doesn't
-		// exist, something is wrong and we want to return an error.
-		subBucket := rootBucket.NestedReadWriteBucket([]byte(prefix))
-		if subBucket == nil {
-			return fmt.Errorf("%w: sub-bucket for prefix %x not "+
-				"found", ErrHashNotFound, prefix)
-		}
-
-		for _, hash := range hashes {
-			hashBytes := hash.CloneBytes()
-			if err := subBucket.Delete(hashBytes); err != nil {
-				return err
-			}
-		}
-	}
-
+	_ = "STUB: not implemented"
 	return nil
 }
+
+// Group hashes by their sub-bucket for more efficient deletion.
+
+// Check which hashes are in the root bucket and group the rest by their
+// sub-bucket prefix.
+
+// Convert hash to bytes for DB operations.
+
+// In case this header was stored in the old place
+// (the root bucket directly), let's check and mark it for
+// removal from there.
+
+// The hash wasn't stored in the root bucket. So we need
+// to use the sub-bucket. We extract the prefix to
+// determine which sub-bucket to use.
+
+// Delete entries from root bucket.
+
+// Delete enties from sub-buckets.
+
+// Try to get the sub-bucket for this prefix. If it doesn't
+// exist, something is wrong and we want to return an error.
